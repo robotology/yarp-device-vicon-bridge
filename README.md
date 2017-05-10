@@ -16,7 +16,7 @@ $ sudo ldconfig
 
 - Export `ViconSDK_ROOT` variable in `~/.bash_aliases`
 ```
-$ export ViconSDK_ROOT=location/of/the/ViconSDK/are
+$ export ViconSDK_ROOT=location/of/the/ViconSDK/libraries
 ```
 
 - Configure and make
