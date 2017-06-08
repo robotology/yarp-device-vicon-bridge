@@ -15,16 +15,24 @@ using namespace yarp::dev;
 
 YarpViconBridge::YarpViconBridge() : hostname("localhost:801"), poly(YARP_NULLPTR), itf(YARP_NULLPTR), rate(120),
     logFile(""), multicastAddress("244.0.0.0:44801"), connectToMultiCast(false), enableMultiCast(false),
-    bReadCentroids(false), bReadRayData(false), clientBufferSize(0), axisMapping("ZUp"), interrupted(false)
+    bReadCentroids(false), bReadRayData(false), clientBufferSize(0), axisMapping("ZUp"), interrupted(false), publish_segments(true), publish_unlabeled_markers(true)
 {
-
+    
+    subject_string="Subject_";
+    segment_string="::Segm_";
+    viconroot_string="Vicon_ROOT";
+    unlabeled_marker_string="UnlMarker#";
 }
 
 YarpViconBridge::YarpViconBridge(std::string _hostname) : hostname(_hostname), poly(YARP_NULLPTR), itf(YARP_NULLPTR), rate(120),
     logFile(""), multicastAddress("244.0.0.0:44801"), connectToMultiCast(false), enableMultiCast(false),
-    bReadCentroids(false), bReadRayData(false), clientBufferSize(0), axisMapping("ZUp"), interrupted(false)
+    bReadCentroids(false), bReadRayData(false), clientBufferSize(0), axisMapping("ZUp"), interrupted(false), publish_segments(true), publish_unlabeled_markers(true)
 {
-
+    
+    subject_string="Subject_";
+    segment_string="::Segm_";
+    viconroot_string="Vicon_ROOT";
+    unlabeled_marker_string="UnlMarker#";
 }
 
 bool YarpViconBridge::configure(yarp::os::ResourceFinder &rf){
@@ -53,6 +61,36 @@ bool YarpViconBridge::configure(yarp::os::ResourceFinder &rf){
         yInfo() << "connecting to multicast address <"<< multicastAddress << "> ...";
     }
 
+    if(rf.check("publish_segments"))
+    {
+        publish_segments=rf.find("publish_segments").asInt()==1;
+    }
+  
+    if(rf.check("publish_unlabeled_markers"))
+    {
+        publish_unlabeled_markers=rf.find("publish_unlabeled_markers").asInt()==1;
+    }
+      
+    if(rf.check("subject_string"))
+    {
+        subject_string=rf.find("subject_string").asString();
+    }
+  
+    if(rf.check("segment_string"))
+    {
+        segment_string=rf.find("segment_string").asString();
+    }
+      
+    if(rf.check("viconroot_string"))
+    {
+        viconroot_string = rf.find("viconroot_string").asString();
+    }
+    
+    if(rf.check("unlabeled_marker_string"))
+    {
+        unlabeled_marker_string = rf.find("unlabeled_marker_string").asString();
+    }
+    
     if(rf.check("centroids"))
     {
         bReadCentroids = true;
@@ -309,9 +347,26 @@ bool YarpViconBridge::updateModule()
             m1[2][0] = _Output_GetSegmentGlobalRotationMatrix.Rotation[ 6 ]; m1[2][1] = _Output_GetSegmentGlobalRotationMatrix.Rotation[ 7 ]; m1[2][2] = _Output_GetSegmentGlobalRotationMatrix.Rotation[ 8 ]; m1[2][3] = _Output_GetSegmentGlobalTranslation.Translation[ 2 ]/1000.0;
             m1[3][0] = 0; m1[3][1] = 0; m1[3][2] = 0; m1[3][3] = 1;
 
-
-            itf->setTransform("Subject_"+SubjectName+"Segm_"+SegmentName, "Vicon_ROOT", m1);
-
+            if (publish_segments)
+            {
+                std::string tf_name;
+                if (subject_string!="")
+                {
+                    tf_name = subject_string+SubjectName+segment_string+SegmentName;
+                }
+                else
+                {
+                    if (segment_string !="")
+                    {
+                        tf_name = segment_string + SegmentName;
+                    }
+                    else
+                    {
+                        tf_name = SegmentName;
+                    }
+                }
+                itf->setTransform(tf_name, viconroot_string, m1);
+            }
       }
 
       // Count the number of markers
@@ -362,12 +417,15 @@ bool YarpViconBridge::updateModule()
         m1[2][0] = 0; m1[2][1] = 0; m1[2][2] = 1; m1[2][3] = _Output_GetUnlabeledMarkerGlobalTranslation.Translation[ 2 ]/1000.0;
         m1[3][0] = 0; m1[3][1] = 0; m1[3][2] = 0; m1[3][3] = 1;
 
-
-        itf->setTransform("UnlMarker#"+std::to_string(UnlabeledMarkerIndex), "Vicon_ROOT", m1);
+        if (publish_unlabeled_markers)
+        {  
+            std::string tf_name = unlabeled_marker_string + std::to_string(UnlabeledMarkerIndex);
+            itf->setTransform(tf_name, viconroot_string, m1);
+        }
     }
+    
     return true;
-
-      }
+}
 
 double YarpViconBridge::getPeriod()
 {
