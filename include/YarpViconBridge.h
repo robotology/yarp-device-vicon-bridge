@@ -38,6 +38,7 @@ private:
     std::string hostname;
     std::string logFile;
     std::string multicastAddress ;
+    bool inversion;
     bool connectToMultiCast;
     bool enableMultiCast;
     bool bReadCentroids;

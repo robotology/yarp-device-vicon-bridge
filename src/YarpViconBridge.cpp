@@ -13,7 +13,7 @@ using namespace yarp::dev;
 
 #define output_stream if(!logFile.empty()) ; else yInfo()
 
-YarpViconBridge::YarpViconBridge() : hostname("localhost:801"), poly(YARP_NULLPTR), itf(YARP_NULLPTR), rate(120),
+YarpViconBridge::YarpViconBridge() : hostname("localhost:801"), inversion(false), poly(YARP_NULLPTR), itf(YARP_NULLPTR), rate(120),
     logFile(""), multicastAddress("244.0.0.0:44801"), connectToMultiCast(false), enableMultiCast(false),
     bReadCentroids(false), bReadRayData(false), clientBufferSize(0), axisMapping("ZUp"), interrupted(false), publish_segments(true), publish_unlabeled_markers(true)
 {
@@ -24,7 +24,7 @@ YarpViconBridge::YarpViconBridge() : hostname("localhost:801"), poly(YARP_NULLPT
     unlabeled_marker_string="UnlMarker#";
 }
 
-YarpViconBridge::YarpViconBridge(std::string _hostname) : hostname(_hostname), poly(YARP_NULLPTR), itf(YARP_NULLPTR), rate(120),
+YarpViconBridge::YarpViconBridge(std::string _hostname) : hostname(_hostname), inversion(false), poly(YARP_NULLPTR), itf(YARP_NULLPTR), rate(120),
     logFile(""), multicastAddress("244.0.0.0:44801"), connectToMultiCast(false), enableMultiCast(false),
     bReadCentroids(false), bReadRayData(false), clientBufferSize(0), axisMapping("ZUp"), interrupted(false), publish_segments(true), publish_unlabeled_markers(true)
 {
@@ -46,6 +46,11 @@ bool YarpViconBridge::configure(yarp::os::ResourceFinder &rf){
     {
         hostname = rf.find("hostname").asString();
         hostname = hostname + ":801";
+    }
+    
+    if(rf.check("inversion"))
+    {
+        inversion = true;
     }
 
     if (rf.check("enable_multicast"))
@@ -365,7 +370,16 @@ bool YarpViconBridge::updateModule()
                         tf_name = SegmentName;
                     }
                 }
-                itf->setTransform(tf_name, viconroot_string, m1);
+                if(inversion)
+                {
+                  m1=yarp::math::SE3inv(m1);
+                  itf->setTransform(viconroot_string, tf_name, m1);
+                  
+                }
+                else
+                {
+                  itf->setTransform(tf_name, viconroot_string, m1);
+                }
             }
       }
 
@@ -420,7 +434,16 @@ bool YarpViconBridge::updateModule()
         if (publish_unlabeled_markers)
         {  
             std::string tf_name = unlabeled_marker_string + std::to_string(UnlabeledMarkerIndex);
-            itf->setTransform(tf_name, viconroot_string, m1);
+            if(inversion)
+            {
+              m1=yarp::math::SE3inv(m1);
+              itf->setTransform(viconroot_string, tf_name, m1);
+            }
+            else
+            {
+              itf->setTransform(tf_name, viconroot_string, m1);
+            }
+          
         }
     }
     

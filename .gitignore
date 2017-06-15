@@ -18,6 +18,7 @@
 *.user
 *.autosave
 *Old.*
+*.kdev4*
 
 # Cmake directory & files
 CMakeFiles/
