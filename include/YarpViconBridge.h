@@ -55,6 +55,7 @@ private:
     std::string segment_string;
     std::string viconroot_string;
     std::string unlabeled_marker_string;
+    std::string test_frame;
     
     size_t frameRateWindow; // frames
     size_t counter;

@@ -5,6 +5,8 @@
  */
 
 #include<YarpViconBridge.h>
+#include<yarp/os/Time.h>
+#include<cmath>
 
 using namespace ViconDataStreamSDK::CPP;
 using namespace yarp::os;
@@ -85,7 +87,12 @@ bool YarpViconBridge::configure(yarp::os::ResourceFinder &rf){
     {
         segment_string=rf.find("segment_string").asString();
     }
-      
+    
+    if(rf.check("test_frame"))
+    {
+        test_frame = rf.find("test_frame").asString();
+    }
+ 
     if(rf.check("viconroot_string"))
     {
         viconroot_string = rf.find("viconroot_string").asString();
@@ -301,6 +308,15 @@ bool YarpViconBridge::updateModule()
     output_stream << "Hardware Frame Number: " << _Output_GetHardwareFrameNumber.HardwareFrameNumber ;
 
 
+    if (test_frame!="")
+    {
+        yarp::sig::Matrix test_matrix (4,4);
+        test_matrix.eye();
+        static double start_test_time = yarp::os::Time::now();
+        double test_time = yarp::os::Time::now();
+        test_matrix[0][4] = sin(test_time-start_test_time);
+        itf->setTransform(viconroot_string, test_frame, test_matrix);
+    }
 
     // Count the number of subjects
     unsigned int SubjectCount = viconClient.GetSubjectCount().SubjectCount;
