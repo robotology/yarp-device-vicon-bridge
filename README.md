@@ -14,6 +14,8 @@ $ sudo ldconfig
 ```
 - Get ViconDataStreamSDK from the [official  Vicon website](https://www.vicon.com/products/software/datastream-sdk)
 
+⚠️ Use the `1.7.1` version of the SDK, the `1.8.0` has some issues.
+
 - Export `ViconSDK_ROOT` variable in `~/.bash_aliases`
 ```
 $ export ViconSDK_ROOT=location/of/the/ViconSDK/libraries
