@@ -57,5 +57,5 @@ enable_ros_subscriber 0
 ```
 - Open antoher terminal and then in `YarpViconBridge/build`
 ```
-$ ./YarpViconBridge --hostname 192.168.100.153
+$ yarpdev --device vicon --hostname 192.168.100.153
 ```

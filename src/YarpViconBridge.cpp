@@ -15,112 +15,117 @@ using namespace yarp::dev;
 
 #define output_stream if(!logFile.empty()) ; else yInfo()
 
-YarpViconBridge::YarpViconBridge() : hostname("localhost:801"), inversion(false), poly(YARP_NULLPTR), itf(YARP_NULLPTR), rate(120),
-    logFile(""), multicastAddress("244.0.0.0:44801"), connectToMultiCast(false), enableMultiCast(false),
-    bReadCentroids(false), bReadRayData(false), clientBufferSize(0), axisMapping("ZUp"), interrupted(false), publish_segments(true), publish_unlabeled_markers(true)
+constexpr uint32_t default_rate = 120;
+
+YarpViconBridge::YarpViconBridge(std::string _hostname) : PeriodicThread(1.0/default_rate),
+                                                          hostname(_hostname),
+                                                          inversion(false),
+                                                          poly(nullptr),
+                                                          itf(nullptr),
+                                                          rate(default_rate),
+                                                          subject_string("Subject_"),
+                                                          segment_string("::Segm_"),
+                                                          viconroot_string("Vicon_ROOT"),
+                                                          unlabeled_marker_string("UnlMarker#"),
+                                                          logFile(""),
+                                                          multicastAddress("244.0.0.0:44801"),
+                                                          connectToMultiCast(false),
+                                                          enableMultiCast(false),
+                                                          bReadCentroids(false),
+                                                          bReadRayData(false),
+                                                          clientBufferSize(0),
+                                                          axisMapping("ZUp"),
+                                                          interrupted(false),
+                                                          publish_segments(true),
+                                                          publish_unlabeled_markers(true)
 {
-    
-    subject_string="Subject_";
-    segment_string="::Segm_";
-    viconroot_string="Vicon_ROOT";
-    unlabeled_marker_string="UnlMarker#";
 }
 
-YarpViconBridge::YarpViconBridge(std::string _hostname) : hostname(_hostname), inversion(false), poly(YARP_NULLPTR), itf(YARP_NULLPTR), rate(120),
-    logFile(""), multicastAddress("244.0.0.0:44801"), connectToMultiCast(false), enableMultiCast(false),
-    bReadCentroids(false), bReadRayData(false), clientBufferSize(0), axisMapping("ZUp"), interrupted(false), publish_segments(true), publish_unlabeled_markers(true)
-{
-    
-    subject_string="Subject_";
-    segment_string="::Segm_";
-    viconroot_string="Vicon_ROOT";
-    unlabeled_marker_string="UnlMarker#";
-}
+bool YarpViconBridge::open(Searchable &config) {
 
-bool YarpViconBridge::configure(yarp::os::ResourceFinder &rf){
-    if (rf.check("log_file"))
+    if (config.check("log_file"))
     {
-        logFile = rf.find("log_file").asString();
+        logFile = config.find("log_file").asString();
         yInfo()<< "Using log file <"<< logFile << "> ...";
     }
 
-    if(rf.check("hostname"))
+    if(config.check("hostname"))
     {
-        hostname = rf.find("hostname").asString();
+        hostname = config.find("hostname").asString();
         hostname = hostname + ":801";
     }
     
-    if(rf.check("inversion"))
+    if(config.check("inversion"))
     {
         inversion = true;
     }
 
-    if (rf.check("enable_multicast"))
+    if (config.check("enable_multicast"))
     {
         enableMultiCast = true;
-        multicastAddress = rf.find("multicastAddress").asString();
+        multicastAddress = config.find("multicastAddress").asString();
         yInfo() << "Enabling multicast address <"<< multicastAddress << "> ...";
     }
-    if (rf.check("connect_to_multicast"))
+    if (config.check("connect_to_multicast"))
     {
         connectToMultiCast = true;
-        multicastAddress = rf.find("connect_to_multicast").asString();
+        multicastAddress = config.find("connect_to_multicast").asString();
         yInfo() << "connecting to multicast address <"<< multicastAddress << "> ...";
     }
 
-    if(rf.check("publish_segments"))
+    if(config.check("publish_segments"))
     {
-        publish_segments=rf.find("publish_segments").asInt()==1;
+        publish_segments=config.find("publish_segments").asInt()==1;
     }
   
-    if(rf.check("publish_unlabeled_markers"))
+    if(config.check("publish_unlabeled_markers"))
     {
-        publish_unlabeled_markers=rf.find("publish_unlabeled_markers").asInt()==1;
+        publish_unlabeled_markers=config.find("publish_unlabeled_markers").asInt()==1;
     }
       
-    if(rf.check("subject_string"))
+    if(config.check("subject_string"))
     {
-        subject_string=rf.find("subject_string").asString();
+        subject_string=config.find("subject_string").asString();
     }
   
-    if(rf.check("segment_string"))
+    if(config.check("segment_string"))
     {
-        segment_string=rf.find("segment_string").asString();
+        segment_string=config.find("segment_string").asString();
     }
     
-    if(rf.check("test_frame"))
+    if(config.check("test_frame"))
     {
-        test_frame = rf.find("test_frame").asString();
+        test_frame = config.find("test_frame").asString();
     }
  
-    if(rf.check("viconroot_string"))
+    if(config.check("viconroot_string"))
     {
-        viconroot_string = rf.find("viconroot_string").asString();
+        viconroot_string = config.find("viconroot_string").asString();
     }
     
-    if(rf.check("unlabeled_marker_string"))
+    if(config.check("unlabeled_marker_string"))
     {
-        unlabeled_marker_string = rf.find("unlabeled_marker_string").asString();
+        unlabeled_marker_string = config.find("unlabeled_marker_string").asString();
     }
     
-    if(rf.check("centroids"))
+    if(config.check("centroids"))
     {
         bReadCentroids = true;
     }
 
-    if(rf.check("rays"))
+    if(config.check("rays"))
     {
         bReadRayData = true;
     }
 
-    if(rf.check("client-buffer-size"))
+    if(config.check("client-buffer-size"))
     {
-        clientBufferSize = rf.find("client-buffer-size").asInt();
+        clientBufferSize = config.find("client-buffer-size").asInt();
     }
 
-    if(rf.check("set-axis-mapping"))
+    if(config.check("set-axis-mapping"))
     {
-        axisMapping = rf.find("set-axis-mapping").asString();
+        axisMapping = config.find("set-axis-mapping").asString();
         if( axisMapping == "XUp" || axisMapping == "YUp" || axisMapping == "ZUp" )
         {
             yInfo() << "Setting Axis to "<< axisMapping;
@@ -246,16 +251,16 @@ bool YarpViconBridge::configure(yarp::os::ResourceFinder &rf){
     frameRateWindow = 1000; // frames
     counter = 0;
     lastTime = clock();
-    return true;
+    return PeriodicThread::start();
 
 }
 
-bool YarpViconBridge::updateModule()
+void YarpViconBridge::run()
 {
     // Get a frame
     output_stream << "Waiting for new frame...";
     if(interrupted)
-        return false;
+        this->close();
     while( viconClient.GetFrame().Result != Result::Success)
     {
         // Sleep a little so that we don't lumber the CPU with a busy poll
@@ -463,27 +468,18 @@ bool YarpViconBridge::updateModule()
         }
     }
     
-    return true;
-}
-
-double YarpViconBridge::getPeriod()
-{
-    return 1.0/rate;
-}
-
-bool YarpViconBridge::interruptModule()
-{
-    interrupted=true;
-    return true;
 }
 
 bool YarpViconBridge::close()
 {
+    if (yarp::os::PeriodicThread::isRunning())
+        yarp::os::PeriodicThread::stop();
+    interrupted = true;
     if(poly)
     {
         poly->close();
         delete poly;
-        poly = YARP_NULLPTR;
+        poly = nullptr;
     }
     if( enableMultiCast )
     {

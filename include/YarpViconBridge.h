@@ -6,6 +6,7 @@
 #ifndef YARPVICONBRIDGE_H
 #define YARPVICONBRIDGE_H
 // YARP includes
+#include <yarp/os/PeriodicThread.h>
 #include <yarp/os/RFModule.h>
 #include <yarp/dev/PolyDriver.h>
 #include <yarp/dev/IFrameTransform.h>
@@ -33,11 +34,12 @@ namespace yarp {
     }
 }
 
-class yarp::dev::YarpViconBridge: public yarp::os::RFModule {
+class yarp::dev::YarpViconBridge: public yarp::dev::DeviceDriver,
+                                  public yarp::os::PeriodicThread {
 private:
     std::string hostname;
     std::string logFile;
-    std::string multicastAddress ;
+    std::string multicastAddress;
     bool inversion;
     bool connectToMultiCast;
     bool enableMultiCast;
@@ -67,45 +69,28 @@ public:
 
     /**
      * @brief yarp::dev::YarpViconBridge
-     */
-    YarpViconBridge();
-
-    /**
-     * @brief yarp::dev::YarpViconBridge
      * @param _hostname
      */
-    YarpViconBridge(std::string _hostname);
+    YarpViconBridge(std::string _hostname="localhost:801");
 
     /**
-     * @brief configure
-     * @param rf
+     * @brief open
+     * @param config
      * @return
      */
-    bool configure(yarp::os::ResourceFinder &rf);
+    bool open(yarp::os::Searchable &config) override;
 
     /**
-     * @brief updateModule
+     * @brief run
      * @return
      */
-    bool updateModule();
-
-    /**
-     * @brief getPeriod
-     * @return
-     */
-    double getPeriod();
-
-    /**
-     * @brief interruptModule
-     * @return
-     */
-    bool interruptModule();
+    void run() override;
 
     /**
      * @brief close
      * @return
      */
-    bool close();
+    bool close() override;
 
 
 };
