@@ -251,7 +251,7 @@ bool YarpViconBridge::open(Searchable &config) {
     frameRateWindow = 1000; // frames
     counter = 0;
     lastTime = clock();
-    return true;
+    return PeriodicThread::start();
 
 }
 
