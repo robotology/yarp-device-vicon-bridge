@@ -9,7 +9,7 @@
 #include <yarp/os/PeriodicThread.h>
 #include <yarp/os/RFModule.h>
 #include <yarp/dev/PolyDriver.h>
-#include <yarp/dev/IFrameTransform.h>
+#include <yarp/dev/IFrameSource.h>
 #include <yarp/math/Math.h>
 #include <yarp/math/FrameTransform.h>
 #include <yarp/os/LogStream.h>
@@ -25,6 +25,7 @@
 #include <ctime>
 #include <vector>
 #include <string.h>
+#include <mutex>
 #ifdef WIN32
 #include <windows.h>
 #else
@@ -39,7 +40,8 @@ namespace yarp {
 }
 
 class yarp::dev::YarpViconBridge: public yarp::dev::DeviceDriver,
-                                  public yarp::os::PeriodicThread {
+                                  public yarp::os::PeriodicThread,
+                                  public yarp::dev::ImplementIFrameSource
 private:
     std::string hostname;
     std::string logFile;
@@ -61,14 +63,19 @@ private:
     std::string segment_string;
     std::string viconroot_string;
     std::string unlabeled_marker_string;
-    std::string test_frame;
+    std::string test_frame_name;
+
+    std::mutex m;
+    std::vector<yarp::math::FrameTransform> frames;
     
     size_t frameRateWindow; // frames
     size_t counter;
     clock_t lastTime;
-    yarp::dev::PolyDriver* poly;
-    yarp::dev::IFrameTransform* itf;
     ViconDataStreamSDK::CPP::Client viconClient;
+protected:
+    void updateFrameContainer(FrameEditor& frameContainer) override;
+    bool callbackPrepare() override { return true; };
+    bool callbackDismiss() override { return true; };
 public:
 
     /**
