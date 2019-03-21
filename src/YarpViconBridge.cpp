@@ -58,6 +58,8 @@ bool YarpViconBridge::open(Searchable &config) {
         yInfo()<< "Using log file <"<< logFile << "> ...";
     }
 
+    silent = config.check("silent");
+
     if(config.check("hostname"))
     {
         hostname = config.find("hostname").asString();
@@ -96,12 +98,12 @@ bool YarpViconBridge::open(Searchable &config) {
     {
         subject_string=config.find("subject_string").asString();
     }
-  
+
     if(config.check("segment_string"))
     {
         segment_string=config.find("segment_string").asString();
     }
-    
+
     if(config.check("test_frame"))
     {
         test_frame_name = config.find("test_frame").asString();
@@ -111,12 +113,12 @@ bool YarpViconBridge::open(Searchable &config) {
     {
         viconroot_string = config.find("viconroot_string").asString();
     }
-    
+
     if(config.check("unlabeled_marker_string"))
     {
         unlabeled_marker_string = config.find("unlabeled_marker_string").asString();
     }
-    
+
     if(config.check("centroids"))
     {
         bReadCentroids = true;
@@ -248,7 +250,8 @@ bool YarpViconBridge::open(Searchable &config) {
 void YarpViconBridge::run()
 {
     // Get a frame
-    output_stream << "Waiting for new frame...";
+    if(!silent)
+        output_stream << "Waiting for new frame...";
     if(interrupted)
         this->close();
     while( viconClient.GetFrame().Result != ViconDataStreamSDK::CPP::Result::Success)
@@ -259,8 +262,8 @@ void YarpViconBridge::run()
         #else
         sleep(1);
         #endif
-
-        output_stream << ".";
+        if(!silent)
+            output_stream << ".";
     }
     if(++counter == frameRateWindow)
     {
@@ -282,26 +285,32 @@ void YarpViconBridge::run()
 
     // Get the frame number
     Output_GetFrameNumber _Output_GetFrameNumber = viconClient.GetFrameNumber();
-    output_stream << "Frame Number: " << _Output_GetFrameNumber.FrameNumber ;
 
     Output_GetFrameRate Rate = viconClient.GetFrameRate();
-    yInfo() << "Frame rate: "           << Rate.FrameRateHz          ;
+
+    if (!silent)
+    {
+        yInfo() << "Frame rate: " << Rate.FrameRateHz;
+        output_stream << "Frame Number: " << _Output_GetFrameNumber.FrameNumber;
+        output_stream << "Latency: " << viconClient.GetLatencyTotal().Total << "s";
+    }
 
     // Get the latency
-    output_stream << "Latency: " << viconClient.GetLatencyTotal().Total << "s" ;
-
     for( unsigned int LatencySampleIndex = 0 ; LatencySampleIndex < viconClient.GetLatencySampleCount().Count ; ++LatencySampleIndex )
     {
         std::string SampleName  = viconClient.GetLatencySampleName( LatencySampleIndex ).Name;
         double      SampleValue = viconClient.GetLatencySampleValue( SampleName ).Value;
 
-        output_stream << "  " << SampleName << " " << SampleValue << "s" ;
+        if (!silent)
+            output_stream << "  " << SampleName << " " << SampleValue << "s" ;
     }
-    output_stream ;
 
     Output_GetHardwareFrameNumber _Output_GetHardwareFrameNumber = viconClient.GetHardwareFrameNumber();
-    output_stream << "Hardware Frame Number: " << _Output_GetHardwareFrameNumber.HardwareFrameNumber ;
-
+    if (!silent)
+    {
+        output_stream;
+        output_stream << "Hardware Frame Number: " << _Output_GetHardwareFrameNumber.HardwareFrameNumber;
+    }
 
     if (test_frame_name!="")
     {
@@ -322,41 +331,38 @@ void YarpViconBridge::run()
 
     // Count the number of subjects
     unsigned int SubjectCount = viconClient.GetSubjectCount().SubjectCount;
-    output_stream << "Subjects (" << SubjectCount << "):" ;
+    if(!silent)
+        output_stream << "Subjects (" << SubjectCount << "):";
     for( unsigned int SubjectIndex = 0 ; SubjectIndex < SubjectCount ; ++SubjectIndex )
     {
-        output_stream << "  Subject #" << SubjectIndex ;
-
-        // Get the subject name
-        std::string SubjectName = viconClient.GetSubjectName( SubjectIndex ).SubjectName;
-        output_stream << "    Name: " << SubjectName ;
-
-        // Get the root segment
-        std::string RootSegment = viconClient.GetSubjectRootSegmentName( SubjectName ).SegmentName;
-        output_stream << "    Root Segment: " << RootSegment ;
-
-        // Count the number of segments
+        std::string SubjectName   = viconClient.GetSubjectName( SubjectIndex ).SubjectName;
+        std::string RootSegment   = viconClient.GetSubjectRootSegmentName( SubjectName ).SegmentName;
         unsigned int SegmentCount = viconClient.GetSegmentCount( SubjectName ).SegmentCount;
-        output_stream << "    Segments (" << SegmentCount << "):" ;
+
+        if (!silent)
+        {
+            output_stream << "  Subject #" << SubjectIndex ;
+            output_stream << "    Name: " << SubjectName ;
+            output_stream << "    Root Segment: " << RootSegment ;
+            output_stream << "    Segments (" << SegmentCount << "):" ;
+        }
+
         for( unsigned int SegmentIndex = 0 ; SegmentIndex < SegmentCount ; ++SegmentIndex )
         {
-            output_stream << "      Segment #" << SegmentIndex ;
+            std::string  SegmentName       = viconClient.GetSegmentName( SubjectName, SegmentIndex ).SegmentName;
+            std::string  SegmentParentName = viconClient.GetSegmentParentName( SubjectName, SegmentName ).SegmentName;
+            unsigned int ChildCount       = viconClient.GetSegmentChildCount( SubjectName, SegmentName ).SegmentCount;
 
-            // Get the segment name
-            std::string SegmentName = viconClient.GetSegmentName( SubjectName, SegmentIndex ).SegmentName;
-            output_stream << "        Name: " << SegmentName ;
-
-            // Get the segment parent
-            std::string SegmentParentName = viconClient.GetSegmentParentName( SubjectName, SegmentName ).SegmentName;
-            output_stream << "        Parent: " << SegmentParentName ;
-
-            // Get the segment's children
-            unsigned int ChildCount = viconClient.GetSegmentChildCount( SubjectName, SegmentName ).SegmentCount;
-            output_stream << "     Children (" << ChildCount << "):" ;
-            for( unsigned int ChildIndex = 0 ; ChildIndex < ChildCount ; ++ChildIndex )
+            if (!silent)
             {
-              std::string ChildName = viconClient.GetSegmentChildName( SubjectName, SegmentName, ChildIndex ).SegmentName;
-              output_stream << "       " << ChildName ;
+                output_stream << "      Segment #"  << SegmentIndex;
+                output_stream << "        Name: "   << SegmentName;
+                output_stream << "        Parent: " << SegmentParentName;
+                output_stream << "     Children ("  << ChildCount << "):";
+                for( unsigned int ChildIndex = 0 ; ChildIndex < ChildCount ; ++ChildIndex )
+                {
+                    output_stream << "       " << viconClient.GetSegmentChildName( SubjectName, SegmentName, ChildIndex ).SegmentName;
+                }
             }
 
             FrameTransform tf;
@@ -386,46 +392,31 @@ void YarpViconBridge::run()
             }
         }
 
-      // Count the number of markers
-      unsigned int MarkerCount = viconClient.GetMarkerCount( SubjectName ).MarkerCount;
-      output_stream << "    Markers (" << MarkerCount << "):" ;
-      for( unsigned int MarkerIndex = 0 ; MarkerIndex < MarkerCount ; ++MarkerIndex )
-      {
-          // Get the marker name
-          std::string MarkerName = viconClient.GetMarkerName( SubjectName, MarkerIndex ).MarkerName;
-
-          // Get the marker parent
-          std::string MarkerParentName = viconClient.GetMarkerParentName( SubjectName, MarkerName ).SegmentName;
-
-          // Get the global marker translation
-          Output_GetMarkerGlobalTranslation _Output_GetMarkerGlobalTranslation =
-          viconClient.GetMarkerGlobalTranslation( SubjectName, MarkerName );
-
-          if( bReadRayData )
-          {
-              Output_GetMarkerRayContributionCount _Output_GetMarkerRayContributionCount =
-              viconClient.GetMarkerRayContributionCount(SubjectName, MarkerName);
-
-              if( _Output_GetMarkerRayContributionCount.Result == Result::Success )
-              {
-                  output_stream << "      Contributed to by: ";
-                  for( unsigned int ContributionIndex = 0; ContributionIndex < _Output_GetMarkerRayContributionCount.RayContributionsCount; ++ContributionIndex )
-                  {
-                      Output_GetMarkerRayContribution _Output_GetMarkerRayContribution =
-                      viconClient.GetMarkerRayContribution( SubjectName, MarkerName, ContributionIndex );
-                      output_stream << "ID:" << _Output_GetMarkerRayContribution.CameraID << " Index:" << _Output_GetMarkerRayContribution.CentroidIndex << " ";
-                  }
-              }
-          }
-      }
-    }
-
+        // Count the number of markers
+        if (!silent)
+        {
+            unsigned int MarkerCount = viconClient.GetMarkerCount(SubjectName).MarkerCount;
+            output_stream << "    Markers (" << MarkerCount << "):";
+            for (unsigned int MarkerIndex = 0; MarkerIndex < MarkerCount; ++MarkerIndex)
             {
+                std::string MarkerName = viconClient.GetMarkerName(SubjectName, MarkerIndex).MarkerName;
+                if (!bReadRayData)
+                    continue;
+
+                auto contributionCount = viconClient.GetMarkerRayContributionCount(SubjectName, MarkerName);
+
+                if (contributionCount.Result != ViconDataStreamSDK::CPP::Result::Success)
+                    continue;
+                output_stream << "      Contributed to by: ";
+                for (unsigned int ContributionIndex = 0; ContributionIndex < contributionCount.RayContributionsCount; ++ContributionIndex)
+                {
+                    auto rayContribution = viconClient.GetMarkerRayContribution(SubjectName, MarkerName, ContributionIndex);
+                    output_stream << "ID:" << rayContribution.CameraID << " Index:" << rayContribution.CentroidIndex << " ";
+                }
             }
         }
     }
 
-    
     if (publish_unlabeled_markers)
     {
         // Get the unlabeled markers

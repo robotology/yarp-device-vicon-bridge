@@ -42,6 +42,7 @@ namespace yarp {
 class yarp::dev::YarpViconBridge: public yarp::dev::DeviceDriver,
                                   public yarp::os::PeriodicThread,
                                   public yarp::dev::ImplementIFrameSource
+{
 private:
     std::string hostname;
     std::string logFile;
@@ -54,6 +55,7 @@ private:
     bool interrupted;
     bool publish_unlabeled_markers;
     bool publish_segments;
+    bool silent{false};
     std::ofstream ofs;
     unsigned int clientBufferSize;
     std::string axisMapping;
