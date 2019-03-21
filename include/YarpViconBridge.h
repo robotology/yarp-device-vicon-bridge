@@ -25,7 +25,11 @@
 #include <ctime>
 #include <vector>
 #include <string.h>
+#ifdef WIN32
+#include <windows.h>
+#else
 #include <unistd.h> // For sleep()
+#endif
 #include <time.h>
 
 namespace yarp {
