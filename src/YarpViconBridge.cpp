@@ -386,6 +386,7 @@ void YarpViconBridge::run()
 
                 tf.parentFrame = viconroot_string;
                 tf.frameId     = tf_name;
+                cacheValid     = false;
                 m.lock();
                 frames.emplace_back(tf);
                 m.unlock();
@@ -421,6 +422,7 @@ void YarpViconBridge::run()
     {
         // Get the unlabeled markers
         unsigned int UnlabeledMarkerCount = viconClient.GetUnlabeledMarkerCount().MarkerCount;
+        cacheValid = false;
         m.lock();
         for (unsigned int UnlabeledMarkerIndex = 0; UnlabeledMarkerIndex < UnlabeledMarkerCount; ++UnlabeledMarkerIndex)
         {
