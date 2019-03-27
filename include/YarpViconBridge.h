@@ -53,8 +53,9 @@ private:
     bool bReadCentroids;
     bool bReadRayData;
     bool interrupted;
-    bool publish_unlabeled_markers;
     bool publish_segments;
+    bool publish_labeled_markers;
+    bool publish_unlabeled_markers;
     bool silent{false};
     std::ofstream ofs;
     unsigned int clientBufferSize;

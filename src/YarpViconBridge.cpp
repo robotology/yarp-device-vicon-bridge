@@ -46,6 +46,7 @@ YarpViconBridge::YarpViconBridge(std::string _hostname) : PeriodicThread(1.0/def
                                                           axisMapping("ZUp"),
                                                           interrupted(false),
                                                           publish_segments(true),
+                                                          publish_labeled_markers(true),
                                                           publish_unlabeled_markers(true)
 {
 }
@@ -87,6 +88,11 @@ bool YarpViconBridge::open(Searchable &config) {
     if(config.check("publish_segments"))
     {
         publish_segments=config.find("publish_segments").asInt()==1;
+    }
+
+    if(config.check("publish_labeled_markers"))
+    {
+        publish_labeled_markers=config.find("publish_labeled_markers").asInt()==1;
     }
   
     if(config.check("publish_unlabeled_markers"))
@@ -370,7 +376,7 @@ void YarpViconBridge::run()
 
             tf.rotation = viconQ2yarpQ(viconClient.GetSegmentGlobalRotationQuaternion(SubjectName, SegmentName));
             tf.transFromVec(pos.Translation[0]/1000.0, pos.Translation[1]/1000.0, pos.Translation[2]/1000.0);
-
+            tf.timestamp = yarp::os::Time::now();
             if (publish_segments)
             {
                 std::string tf_name;
@@ -393,28 +399,43 @@ void YarpViconBridge::run()
             }
         }
 
-        // Count the number of markers
-        if (!silent)
+        if (publish_labeled_markers)
         {
+            // Count the number of markers
             unsigned int MarkerCount = viconClient.GetMarkerCount(SubjectName).MarkerCount;
-            output_stream << "    Markers (" << MarkerCount << "):";
+            if (!silent)
+            {
+                output_stream << "    Markers (" << MarkerCount << "):";
+            }
+            m.lock();
             for (unsigned int MarkerIndex = 0; MarkerIndex < MarkerCount; ++MarkerIndex)
             {
                 std::string MarkerName = viconClient.GetMarkerName(SubjectName, MarkerIndex).MarkerName;
-                if (!bReadRayData)
-                    continue;
+                // Get the global marker translation
+                FrameTransform tf;
+                tf.timestamp = yarp::os::Time::now();
+                auto pos = viconClient.GetMarkerGlobalTranslation(SubjectName, MarkerName);
+                tf.transFromVec(pos.Translation[0] / 1000.0, pos.Translation[1] / 1000.0, pos.Translation[2] / 1000.0);
+                tf.frameId = MarkerName;
+                tf.parentFrame = viconroot_string;
+                frames.emplace_back(tf);
 
-                auto contributionCount = viconClient.GetMarkerRayContributionCount(SubjectName, MarkerName);
+                if (!silent) {
+                    if (!bReadRayData)
+                        continue;
+                    auto contributionCount = viconClient.GetMarkerRayContributionCount(SubjectName, MarkerName);
 
-                if (contributionCount.Result != ViconDataStreamSDK::CPP::Result::Success)
-                    continue;
-                output_stream << "      Contributed to by: ";
-                for (unsigned int ContributionIndex = 0; ContributionIndex < contributionCount.RayContributionsCount; ++ContributionIndex)
-                {
-                    auto rayContribution = viconClient.GetMarkerRayContribution(SubjectName, MarkerName, ContributionIndex);
-                    output_stream << "ID:" << rayContribution.CameraID << " Index:" << rayContribution.CentroidIndex << " ";
+                    if (contributionCount.Result != ViconDataStreamSDK::CPP::Result::Success)
+                        continue;
+                    output_stream << "      Contributed to by: ";
+                    for (unsigned int ContributionIndex = 0; ContributionIndex < contributionCount.RayContributionsCount; ++ContributionIndex)
+                    {
+                        auto rayContribution = viconClient.GetMarkerRayContribution(SubjectName, MarkerName, ContributionIndex);
+                        output_stream << "ID:" << rayContribution.CameraID << " Index:" << rayContribution.CentroidIndex << " ";
+                    }
                 }
             }
+            m.unlock();
         }
     }
 
@@ -428,6 +449,7 @@ void YarpViconBridge::run()
         {
             // Get the global marker translation
             FrameTransform tf;
+            tf.timestamp = yarp::os::Time::now();
             auto           pos = viconClient.GetUnlabeledMarkerGlobalTranslation(UnlabeledMarkerIndex);
             tf.transFromVec(pos.Translation[0] / 1000.0, pos.Translation[1] / 1000.0, pos.Translation[2] / 1000.0);
             tf.frameId = unlabeled_marker_string + std::to_string(UnlabeledMarkerIndex);
