@@ -87,17 +87,17 @@ bool YarpViconBridge::open(Searchable &config) {
 
     if(config.check("publish_segments"))
     {
-        publish_segments=config.find("publish_segments").asInt()==1;
+        publish_segments=config.find("publish_segments"). asInt32()==1;
     }
 
     if(config.check("publish_labeled_markers"))
     {
-        publish_labeled_markers=config.find("publish_labeled_markers").asInt()==1;
+        publish_labeled_markers=config.find("publish_labeled_markers"). asInt32()==1;
     }
   
     if(config.check("publish_unlabeled_markers"))
     {
-        publish_unlabeled_markers=config.find("publish_unlabeled_markers").asInt()==1;
+        publish_unlabeled_markers=config.find("publish_unlabeled_markers"). asInt32()==1;
     }
       
     if(config.check("subject_string"))
@@ -137,7 +137,7 @@ bool YarpViconBridge::open(Searchable &config) {
 
     if(config.check("client-buffer-size"))
     {
-        clientBufferSize = config.find("client-buffer-size").asInt();
+        clientBufferSize = config.find("client-buffer-size").  asInt32();
     }
 
     if(config.check("set-axis-mapping"))
