@@ -16,9 +16,10 @@ $ sudo ldconfig
 
 ⚠️ Use the `1.7.1` version of the SDK, the `1.8.0` has some issues.
 
-- Export `ViconSDK_ROOT` variable in `~/.bash_aliases`
+- Setup the `~/.bash_aliases`
 ```
-$ export ViconSDK_ROOT=location/of/the/ViconSDK/libraries
+export ViconSDK_ROOT=location/of/the/ViconSDK/libraries
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${ViconSDK_ROOT}
 ```
 
 - Configure and make
