@@ -53,6 +53,12 @@ YarpViconBridge::YarpViconBridge(std::string _hostname) : PeriodicThread(1.0/def
 
 bool YarpViconBridge::open(Searchable &config) {
 
+    if (config.check("rate"))
+    {
+        rate = config.find("rate").asInt();
+        PeriodicThread::setPeriod(1/rate);
+    }
+
     if (config.check("log_file"))
     {
         logFile = config.find("log_file").asString();
@@ -260,17 +266,13 @@ void YarpViconBridge::run()
         output_stream << "Waiting for new frame...";
     if(interrupted)
         this->close();
-    while( viconClient.GetFrame().Result != ViconDataStreamSDK::CPP::Result::Success)
+
+    auto now = yarp::os::Time::now();
+    if( viconClient.GetFrame().Result != ViconDataStreamSDK::CPP::Result::Success)
     {
-        // Sleep a little so that we don't lumber the CPU with a busy poll
-        #ifdef WIN32
-        Sleep( 200 );
-        #else
-        sleep(1);
-        #endif
-        if(!silent)
-            output_stream << ".";
+        return;
     }
+
     if(++counter == frameRateWindow)
     {
         clock_t Now = clock();
@@ -331,7 +333,7 @@ void YarpViconBridge::run()
         test_frame.fromMatrix(test_matrix);
         cacheValid = false;
         m.lock();
-        frames.emplace_back(test_frame);
+        frames[test_frame.frameId] = test_frame;
         m.unlock();
     }
 
@@ -394,7 +396,7 @@ void YarpViconBridge::run()
                 tf.frameId     = tf_name;
                 cacheValid     = false;
                 m.lock();
-                frames.emplace_back(tf);
+                frames[tf.frameId] = tf;
                 m.unlock();
             }
         }
@@ -414,11 +416,12 @@ void YarpViconBridge::run()
                 // Get the global marker translation
                 FrameTransform tf;
                 tf.timestamp = yarp::os::Time::now();
+
                 auto pos = viconClient.GetMarkerGlobalTranslation(SubjectName, MarkerName);
                 tf.transFromVec(pos.Translation[0] / 1000.0, pos.Translation[1] / 1000.0, pos.Translation[2] / 1000.0);
                 tf.frameId = MarkerName;
                 tf.parentFrame = viconroot_string;
-                frames.emplace_back(tf);
+                frames[tf.frameId] = tf;
 
                 if (!silent) {
                     if (!bReadRayData)
@@ -454,7 +457,7 @@ void YarpViconBridge::run()
             tf.transFromVec(pos.Translation[0] / 1000.0, pos.Translation[1] / 1000.0, pos.Translation[2] / 1000.0);
             tf.frameId = unlabeled_marker_string + std::to_string(UnlabeledMarkerIndex);
             tf.parentFrame = viconroot_string;
-            frames.emplace_back(tf);
+            frames[tf.frameId] = tf;
         }
         m.unlock();
     }
@@ -466,8 +469,7 @@ void YarpViconBridge::updateFrameContainer(FrameEditor& frameContainer)
 {
     m.lock();
     for (auto& f : frames)
-        frameContainer.insertUpdate(f);
-    cacheValid = true;
+        frameContainer.insertUpdate(f.second);
     m.unlock();
 }
 

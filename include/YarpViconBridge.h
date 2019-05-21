@@ -69,7 +69,7 @@ private:
     std::string test_frame_name;
 
     std::mutex m;
-    std::vector<yarp::math::FrameTransform> frames;
+    std::map<std::string, yarp::math::FrameTransform> frames;
     
     size_t frameRateWindow; // frames
     size_t counter;
