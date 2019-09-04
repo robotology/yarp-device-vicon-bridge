@@ -58,7 +58,7 @@ transforms_lifetime 0.500
 enable_ros_publisher 1
 enable_ros_subscriber 0
 ```
-- Open antoher terminal and then in `YarpViconBridge/build`
+- Open another terminal and then in `YarpViconBridge/build`
 ```
 $ yarpdev --device vicon --hostname 192.168.100.153
 ```
