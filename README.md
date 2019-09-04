@@ -25,8 +25,8 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${ViconSDK_ROOT}
 - Configure and make
 
 ```
-$ git clone https://github.com/robotology/YarpViconBridge.git
-$ cd YarpViconBridge
+$ git clone https://github.com/robotology/yarp-vicon-bridge.git
+$ cd yarp-vicon-bridge
 $ mkdir build && cd build
 $ cd build 
 $ ccmake ..
