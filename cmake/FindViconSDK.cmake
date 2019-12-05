@@ -11,7 +11,7 @@
 
 find_path(ViconSDK_INCLUDE_DIR NAMES DataStreamClient.h HINTS $ENV{ViconSDK_ROOT})
 if(WIN32)        
-        find_library(ViconSDK_LIBRARY NAMES libViconDataStreamSDK_CPP.dll libViconDataStreamSDK_CPP.lib HINTS $ENV{ViconSDK_ROOT})
+        find_library(ViconSDK_LIBRARY NAMES ViconDataStreamSDK_CPP.dll ViconDataStreamSDK_CPP.lib HINTS $ENV{ViconSDK_ROOT})
 endif(WIN32)
 
 if(UNIX AND NOT APPLE)
