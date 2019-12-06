@@ -19,27 +19,27 @@ constexpr uint32_t default_rate = 120;
 
 YarpViconBridge::YarpViconBridge(std::string _hostname) : PeriodicThread(1.0/default_rate),
                                                           hostname(_hostname),
+                                                          logFile(""),
+                                                          multicastAddress("244.0.0.0:44801"),
                                                           inversion(false),
-                                                          poly(nullptr),
-                                                          itf(nullptr),
+                                                          connectToMultiCast(false),
+                                                          enableMultiCast(false),
+                                                          bReadCentroids(false),
+                                                          bReadRayData(false),
+                                                          interrupted(false),
+                                                          publish_labeled_markers(true),
+                                                          publish_unlabeled_markers(true),
+                                                          publish_segments(true),
+                                                          clientBufferSize(0),
+                                                          axisMapping("ZUp"),
                                                           rate(default_rate),
                                                           subject_string("Subj_"),
                                                           segment_string("::Seg_"),
                                                           viconroot_string("Vicon_ROOT"),
                                                           labeled_marker_string("::Marker_"),
                                                           unlabeled_marker_string("UnlMarker#"),
-                                                          logFile(""),
-                                                          multicastAddress("244.0.0.0:44801"),
-                                                          connectToMultiCast(false),
-                                                          enableMultiCast(false),
-                                                          bReadCentroids(false),
-                                                          bReadRayData(false),
-                                                          clientBufferSize(0),
-                                                          axisMapping("ZUp"),
-                                                          interrupted(false),
-                                                          publish_segments(true),
-                                                          publish_labeled_markers(true),
-                                                          publish_unlabeled_markers(true)
+                                                          poly(nullptr),
+                                                          itf(nullptr)
 {
 }
 
@@ -68,6 +68,7 @@ bool YarpViconBridge::open(Searchable &config) {
         multicastAddress = config.find("multicastAddress").asString();
         yInfo() << "Enabling multicast address <"<< multicastAddress << "> ...";
     }
+
     if (config.check("connect_to_multicast"))
     {
         connectToMultiCast = true;
@@ -77,7 +78,7 @@ bool YarpViconBridge::open(Searchable &config) {
 
     if(config.check("publish_segments"))
     {
-        publish_segments=config.find("publish_segments").asInt()==1;
+        publish_segments=config.find("publish_segments").asInt()==true;
     }
 
     if(config.check("publish_labeled_markers"))
@@ -87,24 +88,24 @@ bool YarpViconBridge::open(Searchable &config) {
 
     if(config.check("publish_unlabeled_markers"))
     {
-        publish_unlabeled_markers=config.find("publish_unlabeled_markers").asInt()==1;
+        publish_unlabeled_markers=config.find("publish_unlabeled_markers").asInt()==true;
     }
-      
+
     if(config.check("subject_string"))
     {
         subject_string=config.find("subject_string").asString();
     }
-  
+
     if(config.check("segment_string"))
     {
         segment_string=config.find("segment_string").asString();
     }
-    
+
     if(config.check("test_frame"))
     {
         test_frame = config.find("test_frame").asString();
     }
- 
+
     if(config.check("viconroot_string"))
     {
         viconroot_string = config.find("viconroot_string").asString();
@@ -132,7 +133,7 @@ bool YarpViconBridge::open(Searchable &config) {
 
     if(config.check("client-buffer-size"))
     {
-        clientBufferSize = config.find("client-buffer-size").asInt();
+        clientBufferSize = static_cast<unsigned int>(config.find("client-buffer-size").asInt());
     }
 
     if(config.check("set-axis-mapping"))
@@ -151,13 +152,14 @@ bool YarpViconBridge::open(Searchable &config) {
 
     if(!logFile.empty())
     {
-    ofs.open(logFile.c_str());
-    if(!ofs.is_open())
-    {
-      yError() << "YarpViconBridge: Could not open log file <" << logFile << ">...exiting";
-      return false;
+        ofs.open(logFile.c_str());
+        if(!ofs.is_open())
+        {
+          yError() << "YarpViconBridge: Could not open log file <" << logFile << ">...exiting";
+          return false;
+        }
     }
-    }
+
     // Connect to a server
     yInfo() << "Connecting to " << hostname << " ...";
     while( !viconClient.IsConnected().Connected )
@@ -198,36 +200,35 @@ bool YarpViconBridge::open(Searchable &config) {
     viconClient.EnableDebugData();
     if( bReadCentroids )
     {
-    viconClient.EnableCentroidData();
+        viconClient.EnableCentroidData();
     }
     if( bReadRayData )
     {
-    viconClient.EnableMarkerRayData();
+        viconClient.EnableMarkerRayData();
     }
 
     // Set the streaming mode
     //viconClient.SetStreamMode( ViconDataStreamSDK::CPP::StreamMode::ClientPull );
-    // viconClient.SetStreamMode( ViconDataStreamSDK::CPP::StreamMode::ClientPullPreFetch );
+    //viconClient.SetStreamMode( ViconDataStreamSDK::CPP::StreamMode::ClientPullPreFetch );
     viconClient.SetStreamMode( ViconDataStreamSDK::CPP::StreamMode::ServerPush );
 
     // Set the global up axis
     viconClient.SetAxisMapping( Direction::Forward,
-                           Direction::Left,
-                           Direction::Up ); // Z-up
+                                Direction::Left,
+                                Direction::Up ); // Z-up
 
     if( axisMapping == "YUp")
     {
         viconClient.SetAxisMapping( Direction::Forward,
-                             Direction::Up,
-                             Direction::Right ); // Y-up
+                                    Direction::Up,
+                                    Direction::Right ); // Y-up
     }
     else if( axisMapping == "XUp")
     {
         viconClient.SetAxisMapping( Direction::Up,
-                             Direction::Forward,
-                             Direction::Left ); // X-up
+                                    Direction::Forward,
+                                    Direction::Left ); // X-up
     }
-
 
     if( clientBufferSize > 0 )
     {
@@ -237,8 +238,8 @@ bool YarpViconBridge::open(Searchable &config) {
 
     if( enableMultiCast )
     {
-    assert( viconClient.IsConnected().Connected );
-    viconClient.StartTransmittingMulticast( hostname, multicastAddress );
+        assert( viconClient.IsConnected().Connected );
+        viconClient.StartTransmittingMulticast( hostname, multicastAddress );
     }
 
     // configuring transformClient
@@ -287,7 +288,7 @@ void YarpViconBridge::run()
     if(++counter == frameRateWindow)
     {
         clock_t Now = clock();
-        double FrameRate = (double)(frameRateWindow * CLOCKS_PER_SEC) / (double)(Now - lastTime);
+        double FrameRate = static_cast<double>(frameRateWindow * CLOCKS_PER_SEC) / static_cast<double>(Now - lastTime);
         if(!logFile.empty())
         {
             time_t rawtime;
@@ -295,7 +296,7 @@ void YarpViconBridge::run()
             time ( &rawtime );
             timeinfo = localtime ( &rawtime );
 
-            ofs << "Frame rate = " << FrameRate << " at " <<  asctime (timeinfo)<< std::endl;
+            ofs << "Frame rate = " << FrameRate << " at " << asctime (timeinfo)<< std::endl;
         }
 
         lastTime = Now;
@@ -307,7 +308,7 @@ void YarpViconBridge::run()
     output_stream << "Frame Number: " << _Output_GetFrameNumber.FrameNumber ;
 
     Output_GetFrameRate Rate = viconClient.GetFrameRate();
-    yInfo() << "Frame rate: "           << Rate.FrameRateHz          ;
+    yInfo() << "Frame rate: " << Rate.FrameRateHz;
 
     // Get the latency
     output_stream << "Latency: " << viconClient.GetLatencyTotal().Total << "s" ;
@@ -405,7 +406,7 @@ void YarpViconBridge::run()
                 }
                 if(inversion)
                 {
-                  m1=yarp::math::SE3inv(m1);
+                  m1 = yarp::math::SE3inv(m1);
                   itf->setTransform(viconroot_string, tf_name, m1);
                   
                 }
@@ -419,70 +420,70 @@ void YarpViconBridge::run()
 
         if (publish_labeled_markers)
         {
-            std::string tf_name;
             // Count the number of markers
             unsigned int MarkerCount = viconClient.GetMarkerCount( SubjectName ).MarkerCount;
             output_stream << "    Markers (" << MarkerCount << "):" ;
             for( unsigned int MarkerIndex = 0 ; MarkerIndex < MarkerCount ; ++MarkerIndex )
             {
-              // Get the marker name
-              std::string MarkerName = viconClient.GetMarkerName( SubjectName, MarkerIndex ).MarkerName;
+                // Get the marker name
+                std::string MarkerName = viconClient.GetMarkerName( SubjectName, MarkerIndex ).MarkerName;
 
-              // Get the marker parent
-              std::string MarkerParentName = viconClient.GetMarkerParentName( SubjectName, MarkerName ).SegmentName;
+                // Get the marker parent
+                std::string MarkerParentName = viconClient.GetMarkerParentName( SubjectName, MarkerName ).SegmentName;
 
-              // Get the global marker translation
-              Output_GetMarkerGlobalTranslation _Output_GetMarkerGlobalTranslation =
-              viconClient.GetMarkerGlobalTranslation( SubjectName, MarkerName );
+                // Get the global marker translation
+                Output_GetMarkerGlobalTranslation _Output_GetMarkerGlobalTranslation =
+                        viconClient.GetMarkerGlobalTranslation( SubjectName, MarkerName );
 
-              yarp::sig::Matrix m1(4, 4);
-              m1[0][0] = 1; m1[0][1] = 0; m1[0][2] = 0; m1[0][3] = _Output_GetMarkerGlobalTranslation.Translation[ 0 ]/1000.0;
-              m1[1][0] = 0; m1[1][1] = 0; m1[1][2] = 0; m1[1][3] = _Output_GetMarkerGlobalTranslation.Translation[ 1 ]/1000.0;
-              m1[2][0] = 0; m1[2][1] = 0; m1[2][2] = 1; m1[2][3] = _Output_GetMarkerGlobalTranslation.Translation[ 2 ]/1000.0;
-              m1[3][0] = 0; m1[3][1] = 0; m1[3][2] = 0; m1[3][3] = 1;
+                yarp::sig::Matrix m1(4, 4);
+                m1[0][0] = 1; m1[0][1] = 0; m1[0][2] = 0; m1[0][3] = _Output_GetMarkerGlobalTranslation.Translation[ 0 ]/1000.0;
+                m1[1][0] = 0; m1[1][1] = 0; m1[1][2] = 0; m1[1][3] = _Output_GetMarkerGlobalTranslation.Translation[ 1 ]/1000.0;
+                m1[2][0] = 0; m1[2][1] = 0; m1[2][2] = 1; m1[2][3] = _Output_GetMarkerGlobalTranslation.Translation[ 2 ]/1000.0;
+                m1[3][0] = 0; m1[3][1] = 0; m1[3][2] = 0; m1[3][3] = 1;
 
-              if (subject_string!="")
-              {
-                  tf_name = subject_string+SubjectName+labeled_marker_string+MarkerName;
-              }
-              else
-              {
-                  if (labeled_marker_string !="")
-                  {
-                      tf_name = labeled_marker_string + MarkerName;
-                  }
-                  else
-                  {
-                      tf_name = MarkerName;
-                  }
-              }
+                std::string tf_name;
+                if (subject_string!="")
+                {
+                    tf_name = subject_string+SubjectName+labeled_marker_string+MarkerName;
+                }
+                else
+                {
+                    if (labeled_marker_string !="")
+                    {
+                        tf_name = labeled_marker_string + MarkerName;
+                    }
+                    else
+                    {
+                        tf_name = MarkerName;
+                    }
+                }
 
-              if(inversion)
-              {
-                m1=yarp::math::SE3inv(m1);
-                itf->setTransform(viconroot_string, tf_name, m1);
-              }
-              else
-              {
-                itf->setTransform(tf_name, viconroot_string, m1);
-              }
+                if(inversion)
+                {
+                    m1=yarp::math::SE3inv(m1);
+                    itf->setTransform(viconroot_string, tf_name, m1);
+                }
+                else
+                {
+                    itf->setTransform(tf_name, viconroot_string, m1);
+                }
 
-              if( bReadRayData )
-              {
-                  Output_GetMarkerRayContributionCount _Output_GetMarkerRayContributionCount =
-                  viconClient.GetMarkerRayContributionCount(SubjectName, MarkerName);
+                if( bReadRayData )
+                {
+                    Output_GetMarkerRayContributionCount _Output_GetMarkerRayContributionCount =
+                            viconClient.GetMarkerRayContributionCount(SubjectName, MarkerName);
 
-                  if( _Output_GetMarkerRayContributionCount.Result == Result::Success )
-                  {
-                      output_stream << "      Contributed to by: ";
-                      for( unsigned int ContributionIndex = 0; ContributionIndex < _Output_GetMarkerRayContributionCount.RayContributionsCount; ++ContributionIndex )
-                      {
-                          Output_GetMarkerRayContribution _Output_GetMarkerRayContribution =
-                          viconClient.GetMarkerRayContribution( SubjectName, MarkerName, ContributionIndex );
-                          output_stream << "ID:" << _Output_GetMarkerRayContribution.CameraID << " Index:" << _Output_GetMarkerRayContribution.CentroidIndex << " ";
-                      }
-                  }
-              }
+                    if( _Output_GetMarkerRayContributionCount.Result == Result::Success )
+                    {
+                        output_stream << "      Contributed to by: ";
+                        for( unsigned int ContributionIndex = 0; ContributionIndex < _Output_GetMarkerRayContributionCount.RayContributionsCount; ++ContributionIndex )
+                        {
+                            Output_GetMarkerRayContribution _Output_GetMarkerRayContribution =
+                                    viconClient.GetMarkerRayContribution( SubjectName, MarkerName, ContributionIndex );
+                            output_stream << "ID:" << _Output_GetMarkerRayContribution.CameraID << " Index:" << _Output_GetMarkerRayContribution.CentroidIndex << " ";
+                        }
+                    }
+                }
             }
         }
     }
@@ -516,7 +517,6 @@ void YarpViconBridge::run()
           
         }
     }
-    
 }
 
 bool YarpViconBridge::close()
@@ -548,14 +548,12 @@ bool YarpViconBridge::close()
     }
 
     // Disconnect and dispose
-    int t = clock();
+    auto t = clock();
     yInfo() << " Disconnecting..." ;
     viconClient.Disconnect();
-    int dt = clock() - t;
-    double secs = (double) (dt)/(double)CLOCKS_PER_SEC;
+    auto dt = clock() - t;
+    double secs = static_cast<double>(dt)/static_cast<double>(CLOCKS_PER_SEC);
     yInfo() << " Disconnect time = " << secs << " secs" ;
 
     return true;
 }
-
-
