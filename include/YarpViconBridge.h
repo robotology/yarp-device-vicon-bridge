@@ -55,6 +55,7 @@ private:
     bool publish_labeled_markers;
     bool publish_unlabeled_markers;
     bool publish_segments;
+    bool silent;
     std::ofstream ofs;
     unsigned int clientBufferSize;
     std::string axisMapping;

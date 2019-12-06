@@ -30,6 +30,7 @@ YarpViconBridge::YarpViconBridge(std::string _hostname) : PeriodicThread(1.0/def
                                                           publish_labeled_markers(true),
                                                           publish_unlabeled_markers(true),
                                                           publish_segments(true),
+                                                          silent(false),
                                                           clientBufferSize(0),
                                                           axisMapping("ZUp"),
                                                           rate(default_rate),
@@ -55,6 +56,11 @@ bool YarpViconBridge::open(Searchable &config) {
     {
         hostname = config.find("hostname").asString();
         hostname = hostname + ":801";
+    }
+
+    if(config.check("silent"))
+    {
+        silent = true;
     }
     
     if(config.check("inversion"))
@@ -271,7 +277,10 @@ bool YarpViconBridge::open(Searchable &config) {
 void YarpViconBridge::run()
 {
     // Get a frame
-    output_stream << "Waiting for new frame...";
+    if (!silent)
+    {
+        output_stream << "Waiting for new frame...";
+    }
     if(interrupted)
         this->close();
     while( viconClient.GetFrame().Result != Result::Success)
@@ -305,25 +314,34 @@ void YarpViconBridge::run()
 
     // Get the frame number
     Output_GetFrameNumber _Output_GetFrameNumber = viconClient.GetFrameNumber();
-    output_stream << "Frame Number: " << _Output_GetFrameNumber.FrameNumber ;
-
     Output_GetFrameRate Rate = viconClient.GetFrameRate();
-    yInfo() << "Frame rate: " << Rate.FrameRateHz;
 
-    // Get the latency
-    output_stream << "Latency: " << viconClient.GetLatencyTotal().Total << "s" ;
+    if (!silent)
+    {
+        yInfo() << "Frame rate: " << Rate.FrameRateHz;
+        output_stream << "Frame Number: " << _Output_GetFrameNumber.FrameNumber ;
+        // Get the latency
+        output_stream << "Latency: " << viconClient.GetLatencyTotal().Total << "s" ;
+    }
 
     for( unsigned int LatencySampleIndex = 0 ; LatencySampleIndex < viconClient.GetLatencySampleCount().Count ; ++LatencySampleIndex )
     {
         std::string SampleName  = viconClient.GetLatencySampleName( LatencySampleIndex ).Name;
         double      SampleValue = viconClient.GetLatencySampleValue( SampleName ).Value;
 
-        output_stream << "  " << SampleName << " " << SampleValue << "s" ;
+        if (!silent)
+        {
+            output_stream << "  " << SampleName << " " << SampleValue << "s" ;
+        }
     }
-    output_stream ;
 
     Output_GetHardwareFrameNumber _Output_GetHardwareFrameNumber = viconClient.GetHardwareFrameNumber();
-    output_stream << "Hardware Frame Number: " << _Output_GetHardwareFrameNumber.HardwareFrameNumber ;
+    if (!silent)
+    {
+        output_stream;
+        output_stream << "Hardware Frame Number: " << _Output_GetHardwareFrameNumber.HardwareFrameNumber;
+    }
+
 
 
     if (test_frame!="")
@@ -338,41 +356,50 @@ void YarpViconBridge::run()
 
     // Count the number of subjects
     unsigned int SubjectCount = viconClient.GetSubjectCount().SubjectCount;
-    output_stream << "Subjects (" << SubjectCount << "):" ;
+    if (!silent)
+    {
+        output_stream << "Subjects (" << SubjectCount << "):" ;
+    }
+
     for( unsigned int SubjectIndex = 0 ; SubjectIndex < SubjectCount ; ++SubjectIndex )
     {
-        output_stream << "  Subject #" << SubjectIndex ;
-
         // Get the subject name
         std::string SubjectName = viconClient.GetSubjectName( SubjectIndex ).SubjectName;
-        output_stream << "    Name: " << SubjectName ;
-
         // Get the root segment
         std::string RootSegment = viconClient.GetSubjectRootSegmentName( SubjectName ).SegmentName;
-        output_stream << "    Root Segment: " << RootSegment ;
-
         // Count the number of segments
         unsigned int SegmentCount = viconClient.GetSegmentCount( SubjectName ).SegmentCount;
-        output_stream << "    Segments (" << SegmentCount << "):" ;
+
+        if (!silent)
+        {
+            output_stream << "  Subject #" << SubjectIndex ;
+            output_stream << "    Name: " << SubjectName ;
+            output_stream << "    Root Segment: " << RootSegment ;
+            output_stream << "    Segments (" << SegmentCount << "):" ;
+        }
+
         for( unsigned int SegmentIndex = 0 ; SegmentIndex < SegmentCount ; ++SegmentIndex )
         {
-            output_stream << "      Segment #" << SegmentIndex ;
-
             // Get the segment name
             std::string SegmentName = viconClient.GetSegmentName( SubjectName, SegmentIndex ).SegmentName;
-            output_stream << "        Name: " << SegmentName ;
 
             // Get the segment parent
             std::string SegmentParentName = viconClient.GetSegmentParentName( SubjectName, SegmentName ).SegmentName;
-            output_stream << "        Parent: " << SegmentParentName ;
 
             // Get the segment's children
             unsigned int ChildCount = viconClient.GetSegmentChildCount( SubjectName, SegmentName ).SegmentCount;
-            output_stream << "     Children (" << ChildCount << "):" ;
-            for( unsigned int ChildIndex = 0 ; ChildIndex < ChildCount ; ++ChildIndex )
+
+            if (!silent)
             {
-              std::string ChildName = viconClient.GetSegmentChildName( SubjectName, SegmentName, ChildIndex ).SegmentName;
-              output_stream << "       " << ChildName ;
+                output_stream << "      Segment #" << SegmentIndex ;
+                output_stream << "        Name: " << SegmentName;
+                output_stream << "        Parent: " << SegmentParentName;
+                output_stream << "     Children (" << ChildCount << "):";
+                for( unsigned int ChildIndex = 0 ; ChildIndex < ChildCount ; ++ChildIndex )
+                {
+                    std::string ChildName = viconClient.GetSegmentChildName( SubjectName, SegmentName, ChildIndex ).SegmentName;
+                        output_stream << "       " << ChildName ;
+                }
             }
 
             // Get the global segment rotation as a matrix
@@ -422,7 +449,11 @@ void YarpViconBridge::run()
         {
             // Count the number of markers
             unsigned int MarkerCount = viconClient.GetMarkerCount( SubjectName ).MarkerCount;
-            output_stream << "    Markers (" << MarkerCount << "):" ;
+            if (!silent)
+            {
+                output_stream << "    Markers (" << MarkerCount << "):";
+            }
+
             for( unsigned int MarkerIndex = 0 ; MarkerIndex < MarkerCount ; ++MarkerIndex )
             {
                 // Get the marker name
@@ -468,20 +499,25 @@ void YarpViconBridge::run()
                     itf->setTransform(tf_name, viconroot_string, m1);
                 }
 
-                if( bReadRayData )
+                if (!silent)
                 {
+                    if (!bReadRayData)
+                    {
+                        continue;
+                    }
                     Output_GetMarkerRayContributionCount _Output_GetMarkerRayContributionCount =
                             viconClient.GetMarkerRayContributionCount(SubjectName, MarkerName);
 
-                    if( _Output_GetMarkerRayContributionCount.Result == Result::Success )
+                    if( _Output_GetMarkerRayContributionCount.Result != Result::Success )
                     {
-                        output_stream << "      Contributed to by: ";
-                        for( unsigned int ContributionIndex = 0; ContributionIndex < _Output_GetMarkerRayContributionCount.RayContributionsCount; ++ContributionIndex )
-                        {
-                            Output_GetMarkerRayContribution _Output_GetMarkerRayContribution =
-                                    viconClient.GetMarkerRayContribution( SubjectName, MarkerName, ContributionIndex );
-                            output_stream << "ID:" << _Output_GetMarkerRayContribution.CameraID << " Index:" << _Output_GetMarkerRayContribution.CentroidIndex << " ";
-                        }
+                        continue;
+                    }
+                    output_stream << "      Contributed to by: ";
+                    for( unsigned int ContributionIndex = 0; ContributionIndex < _Output_GetMarkerRayContributionCount.RayContributionsCount; ++ContributionIndex )
+                    {
+                        Output_GetMarkerRayContribution _Output_GetMarkerRayContribution =
+                                viconClient.GetMarkerRayContribution( SubjectName, MarkerName, ContributionIndex );
+                        output_stream << "ID:" << _Output_GetMarkerRayContribution.CameraID << " Index:" << _Output_GetMarkerRayContribution.CentroidIndex << " ";
                     }
                 }
             }
