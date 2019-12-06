@@ -52,6 +52,7 @@ private:
     bool bReadCentroids;
     bool bReadRayData;
     bool interrupted;
+    bool publish_labeled_markers;
     bool publish_unlabeled_markers;
     bool publish_segments;
     std::ofstream ofs;
@@ -62,6 +63,7 @@ private:
     std::string subject_string;
     std::string segment_string;
     std::string viconroot_string;
+    std::string labeled_marker_string;
     std::string unlabeled_marker_string;
     std::string test_frame;
     

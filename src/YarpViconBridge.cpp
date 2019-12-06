@@ -23,9 +23,10 @@ YarpViconBridge::YarpViconBridge(std::string _hostname) : PeriodicThread(1.0/def
                                                           poly(nullptr),
                                                           itf(nullptr),
                                                           rate(default_rate),
-                                                          subject_string("Subject_"),
-                                                          segment_string("::Segm_"),
+                                                          subject_string("Subj_"),
+                                                          segment_string("::Seg_"),
                                                           viconroot_string("Vicon_ROOT"),
+                                                          labeled_marker_string("::Marker_"),
                                                           unlabeled_marker_string("UnlMarker#"),
                                                           logFile(""),
                                                           multicastAddress("244.0.0.0:44801"),
@@ -37,6 +38,7 @@ YarpViconBridge::YarpViconBridge(std::string _hostname) : PeriodicThread(1.0/def
                                                           axisMapping("ZUp"),
                                                           interrupted(false),
                                                           publish_segments(true),
+                                                          publish_labeled_markers(true),
                                                           publish_unlabeled_markers(true)
 {
 }
@@ -77,7 +79,12 @@ bool YarpViconBridge::open(Searchable &config) {
     {
         publish_segments=config.find("publish_segments").asInt()==1;
     }
-  
+
+    if(config.check("publish_labeled_markers"))
+    {
+        publish_labeled_markers=config.find("publish_labeled_markers").asInt()==true;
+    }
+
     if(config.check("publish_unlabeled_markers"))
     {
         publish_unlabeled_markers=config.find("publish_unlabeled_markers").asInt()==1;
@@ -102,7 +109,12 @@ bool YarpViconBridge::open(Searchable &config) {
     {
         viconroot_string = config.find("viconroot_string").asString();
     }
-    
+
+    if(config.check("labeled_marker_string"))
+    {
+        labeled_marker_string = config.find("labeled_marker_string").asString();
+    }
+
     if(config.check("unlabeled_marker_string"))
     {
         unlabeled_marker_string = config.find("unlabeled_marker_string").asString();
@@ -404,38 +416,75 @@ void YarpViconBridge::run()
             }
       }
 
-      // Count the number of markers
-      unsigned int MarkerCount = viconClient.GetMarkerCount( SubjectName ).MarkerCount;
-      output_stream << "    Markers (" << MarkerCount << "):" ;
-      for( unsigned int MarkerIndex = 0 ; MarkerIndex < MarkerCount ; ++MarkerIndex )
-      {
-          // Get the marker name
-          std::string MarkerName = viconClient.GetMarkerName( SubjectName, MarkerIndex ).MarkerName;
 
-          // Get the marker parent
-          std::string MarkerParentName = viconClient.GetMarkerParentName( SubjectName, MarkerName ).SegmentName;
+        if (publish_labeled_markers)
+        {
+            std::string tf_name;
+            // Count the number of markers
+            unsigned int MarkerCount = viconClient.GetMarkerCount( SubjectName ).MarkerCount;
+            output_stream << "    Markers (" << MarkerCount << "):" ;
+            for( unsigned int MarkerIndex = 0 ; MarkerIndex < MarkerCount ; ++MarkerIndex )
+            {
+              // Get the marker name
+              std::string MarkerName = viconClient.GetMarkerName( SubjectName, MarkerIndex ).MarkerName;
 
-          // Get the global marker translation
-          Output_GetMarkerGlobalTranslation _Output_GetMarkerGlobalTranslation =
-          viconClient.GetMarkerGlobalTranslation( SubjectName, MarkerName );
+              // Get the marker parent
+              std::string MarkerParentName = viconClient.GetMarkerParentName( SubjectName, MarkerName ).SegmentName;
 
-          if( bReadRayData )
-          {
-              Output_GetMarkerRayContributionCount _Output_GetMarkerRayContributionCount =
-              viconClient.GetMarkerRayContributionCount(SubjectName, MarkerName);
+              // Get the global marker translation
+              Output_GetMarkerGlobalTranslation _Output_GetMarkerGlobalTranslation =
+              viconClient.GetMarkerGlobalTranslation( SubjectName, MarkerName );
 
-              if( _Output_GetMarkerRayContributionCount.Result == Result::Success )
+              yarp::sig::Matrix m1(4, 4);
+              m1[0][0] = 1; m1[0][1] = 0; m1[0][2] = 0; m1[0][3] = _Output_GetMarkerGlobalTranslation.Translation[ 0 ]/1000.0;
+              m1[1][0] = 0; m1[1][1] = 0; m1[1][2] = 0; m1[1][3] = _Output_GetMarkerGlobalTranslation.Translation[ 1 ]/1000.0;
+              m1[2][0] = 0; m1[2][1] = 0; m1[2][2] = 1; m1[2][3] = _Output_GetMarkerGlobalTranslation.Translation[ 2 ]/1000.0;
+              m1[3][0] = 0; m1[3][1] = 0; m1[3][2] = 0; m1[3][3] = 1;
+
+              if (subject_string!="")
               {
-                  output_stream << "      Contributed to by: ";
-                  for( unsigned int ContributionIndex = 0; ContributionIndex < _Output_GetMarkerRayContributionCount.RayContributionsCount; ++ContributionIndex )
+                  tf_name = subject_string+SubjectName+labeled_marker_string+MarkerName;
+              }
+              else
+              {
+                  if (labeled_marker_string !="")
                   {
-                      Output_GetMarkerRayContribution _Output_GetMarkerRayContribution =
-                      viconClient.GetMarkerRayContribution( SubjectName, MarkerName, ContributionIndex );
-                      output_stream << "ID:" << _Output_GetMarkerRayContribution.CameraID << " Index:" << _Output_GetMarkerRayContribution.CentroidIndex << " ";
+                      tf_name = labeled_marker_string + MarkerName;
+                  }
+                  else
+                  {
+                      tf_name = MarkerName;
                   }
               }
-          }
-      }
+
+              if(inversion)
+              {
+                m1=yarp::math::SE3inv(m1);
+                itf->setTransform(viconroot_string, tf_name, m1);
+              }
+              else
+              {
+                itf->setTransform(tf_name, viconroot_string, m1);
+              }
+
+              if( bReadRayData )
+              {
+                  Output_GetMarkerRayContributionCount _Output_GetMarkerRayContributionCount =
+                  viconClient.GetMarkerRayContributionCount(SubjectName, MarkerName);
+
+                  if( _Output_GetMarkerRayContributionCount.Result == Result::Success )
+                  {
+                      output_stream << "      Contributed to by: ";
+                      for( unsigned int ContributionIndex = 0; ContributionIndex < _Output_GetMarkerRayContributionCount.RayContributionsCount; ++ContributionIndex )
+                      {
+                          Output_GetMarkerRayContribution _Output_GetMarkerRayContribution =
+                          viconClient.GetMarkerRayContribution( SubjectName, MarkerName, ContributionIndex );
+                          output_stream << "ID:" << _Output_GetMarkerRayContribution.CameraID << " Index:" << _Output_GetMarkerRayContribution.CentroidIndex << " ";
+                      }
+                  }
+              }
+            }
+        }
     }
 
     // Get the unlabeled markers
