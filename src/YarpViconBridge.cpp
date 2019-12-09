@@ -468,7 +468,7 @@ void YarpViconBridge::run()
 
                 yarp::sig::Matrix m1(4, 4);
                 m1[0][0] = 1; m1[0][1] = 0; m1[0][2] = 0; m1[0][3] = _Output_GetMarkerGlobalTranslation.Translation[ 0 ]/1000.0;
-                m1[1][0] = 0; m1[1][1] = 0; m1[1][2] = 0; m1[1][3] = _Output_GetMarkerGlobalTranslation.Translation[ 1 ]/1000.0;
+                m1[1][0] = 0; m1[1][1] = 1; m1[1][2] = 0; m1[1][3] = _Output_GetMarkerGlobalTranslation.Translation[ 1 ]/1000.0;
                 m1[2][0] = 0; m1[2][1] = 0; m1[2][2] = 1; m1[2][3] = _Output_GetMarkerGlobalTranslation.Translation[ 2 ]/1000.0;
                 m1[3][0] = 0; m1[3][1] = 0; m1[3][2] = 0; m1[3][3] = 1;
 
@@ -534,7 +534,7 @@ void YarpViconBridge::run()
 
         yarp::sig::Matrix m1(4, 4);
         m1[0][0] = 1; m1[0][1] = 0; m1[0][2] = 0; m1[0][3] = _Output_GetUnlabeledMarkerGlobalTranslation.Translation[ 0 ]/1000.0;
-        m1[1][0] = 0; m1[1][1] = 0; m1[1][2] = 0; m1[1][3] = _Output_GetUnlabeledMarkerGlobalTranslation.Translation[ 1 ]/1000.0;
+        m1[1][0] = 0; m1[1][1] = 1; m1[1][2] = 0; m1[1][3] = _Output_GetUnlabeledMarkerGlobalTranslation.Translation[ 1 ]/1000.0;
         m1[2][0] = 0; m1[2][1] = 0; m1[2][2] = 1; m1[2][3] = _Output_GetUnlabeledMarkerGlobalTranslation.Translation[ 2 ]/1000.0;
         m1[3][0] = 0; m1[3][1] = 0; m1[3][2] = 0; m1[3][3] = 1;
 
