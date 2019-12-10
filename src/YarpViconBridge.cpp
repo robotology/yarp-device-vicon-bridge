@@ -84,17 +84,17 @@ bool YarpViconBridge::open(Searchable &config) {
 
     if(config.check("publish_segments"))
     {
-        publish_segments=config.find("publish_segments").asInt()==true;
+        publish_segments=config.find("publish_segments").asBool()==true;
     }
 
     if(config.check("publish_labeled_markers"))
     {
-        publish_labeled_markers=config.find("publish_labeled_markers").asInt()==true;
+        publish_labeled_markers=config.find("publish_labeled_markers").asBool()==true;
     }
 
     if(config.check("publish_unlabeled_markers"))
     {
-        publish_unlabeled_markers=config.find("publish_unlabeled_markers").asInt()==true;
+        publish_unlabeled_markers=config.find("publish_unlabeled_markers").asBool()==true;
     }
 
     if(config.check("subject_string"))
