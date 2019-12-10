@@ -52,19 +52,21 @@ private:
     bool bReadCentroids;
     bool bReadRayData;
     bool interrupted;
+    bool publish_labeled_markers;
     bool publish_unlabeled_markers;
     bool publish_segments;
+    bool silent;
     std::ofstream ofs;
     unsigned int clientBufferSize;
     std::string axisMapping;
-    int rate;
-    
+
     std::string subject_string;
     std::string segment_string;
     std::string viconroot_string;
+    std::string labeled_marker_string;
     std::string unlabeled_marker_string;
     std::string test_frame;
-    
+
     size_t frameRateWindow; // frames
     size_t counter;
     clock_t lastTime;
