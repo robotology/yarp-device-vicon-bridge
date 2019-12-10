@@ -33,7 +33,6 @@ YarpViconBridge::YarpViconBridge(std::string _hostname) : PeriodicThread(1.0/def
                                                           silent(false),
                                                           clientBufferSize(0),
                                                           axisMapping("ZUp"),
-                                                          rate(default_rate),
                                                           subject_string("Subj_"),
                                                           segment_string("::Seg_"),
                                                           viconroot_string("Vicon_ROOT"),
@@ -84,17 +83,17 @@ bool YarpViconBridge::open(Searchable &config) {
 
     if(config.check("publish_segments"))
     {
-        publish_segments=config.find("publish_segments").asBool()==true;
+        publish_segments = config.find("publish_segments").asBool();
     }
 
     if(config.check("publish_labeled_markers"))
     {
-        publish_labeled_markers=config.find("publish_labeled_markers").asBool()==true;
+        publish_labeled_markers = config.find("publish_labeled_markers").asBool();
     }
 
     if(config.check("publish_unlabeled_markers"))
     {
-        publish_unlabeled_markers=config.find("publish_unlabeled_markers").asBool()==true;
+        publish_unlabeled_markers = config.find("publish_unlabeled_markers").asBool();
     }
 
     if(config.check("subject_string"))

@@ -59,7 +59,6 @@ private:
     std::ofstream ofs;
     unsigned int clientBufferSize;
     std::string axisMapping;
-    int rate;
 
     std::string subject_string;
     std::string segment_string;
