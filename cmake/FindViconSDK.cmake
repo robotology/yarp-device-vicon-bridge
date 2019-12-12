@@ -1,3 +1,12 @@
+################################################################################
+#                                                                              #
+# Copyright (C) 2019 Fondazione Istitito Italiano di Tecnologia (IIT)          #
+# All Rights Reserved.                                                         #
+#                                                                              #
+################################################################################
+
+# @author Nicolo' Genesio <nicolo.genesio@iit.it>
+
 #
 # Find the ViconSDK includes and library
 #
