@@ -11,11 +11,11 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 include(FeatureSummary)
 
-find_package(YARP 3.0 REQUIRED
-                      COMPONENTS OS
-                                 sig
-                                 dev
-                                 math)
+find_package(YARP 3.2.0 REQUIRED
+                        COMPONENTS OS
+                                   sig
+                                   dev
+                                   math)
 
 find_package(ViconSDK REQUIRED)
 
@@ -50,9 +50,5 @@ yarp_install(TARGETS yarp_vicon
              COMPONENT runtime
              LIBRARY DESTINATION ${YARP_DYNAMIC_PLUGINS_INSTALL_DIR}
              ARCHIVE DESTINATION ${YARP_STATIC_PLUGINS_INSTALL_DIR})
-yarp_install(FILES vicon.ini
-             COMPONENT runtime
-             DESTINATION ${YARP_PLUGIN_MANIFESTS_INSTALL_DIR})
-
 
 set_property(TARGET yarp_vicon PROPERTY FOLDER "Plugins/Device")
