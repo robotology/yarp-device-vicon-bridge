@@ -13,8 +13,8 @@ Using this device, it is possible to retrieve the Vicon markers information in t
 ### Linux
 - Setup the `~/.bash_aliases`
   ```bash
-  export ViconSDK_ROOT=location/of/the/ViconSDK/libraries
-  export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${ViconSDK_ROOT}
+  export ViconSDK_DIR=location/of/the/ViconSDK/libraries
+  export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${ViconSDK_DIR}
   ```
 - Configure and make
   ```bash
@@ -33,8 +33,8 @@ Using this device, it is possible to retrieve the Vicon markers information in t
 ### Windows
 - Setup the environment variables
   ```bash
-    setx ViconSDK_ROOT "location/of/the/ViconSDK/libraries"
-    setx PATH=%PATH%;ViconSDK_ROOT 
+    setx ViconSDK_DIR "location/of/the/ViconSDK/libraries"
+    setx PATH=%PATH%;ViconSDK_DIR
   ```
   :bulb: You can also set the environment variables using a GUI called [Rapid Environment Editor](https://www.rapidee.com/en/about)
   
