@@ -1,4 +1,13 @@
 # `yarp-vicon-bridge`
+
+## Maintainers
+This repository is maintained by:
+
+| | |
+|:---:|:---:|
+| [<img src="https://github.com/Nicogene.png" width="40">](https://github.com/niNicogenecogene) | [@Nicogene](https://github.com/Nicogene) |
+
+## Description
 The `yarp-vicon-bridge` is a [YARP device](https://www.yarp.it/note_devices.html) working as interface between a Vicon setup and YARP. 
 
 Using this device, it is possible to retrieve the Vicon markers information in the form of transformation matrices, i.e. a 3D vector for translation and a quaternion for the rotation. 
