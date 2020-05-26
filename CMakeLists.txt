@@ -22,8 +22,6 @@ find_package(ViconSDK REQUIRED)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${ViconSDK_INCLUDE_DIR})
 set(YARP_FORCE_DYNAMIC_PLUGINS TRUE CACHE INTERNAL "yarp_vicon is always built with dynamic plugins")
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
-# Warning: the <package> option of yarp_configure_plugins_installation should be different from the plugin name
-yarp_configure_plugins_installation(vicon_device)
 
 yarp_prepare_plugin(vicon
                     CATEGORY device
@@ -49,6 +47,8 @@ yarp_install(TARGETS yarp_vicon
              EXPORT YARP_${YARP_PLUGIN_MASTER}
              COMPONENT runtime
              LIBRARY DESTINATION ${YARP_DYNAMIC_PLUGINS_INSTALL_DIR}
-             ARCHIVE DESTINATION ${YARP_STATIC_PLUGINS_INSTALL_DIR})
+             ARCHIVE DESTINATION ${YARP_STATIC_PLUGINS_INSTALL_DIR}
+             YARP_INI DESTINATION ${YARP_PLUGIN_MANIFESTS_INSTALL_DIR}
+             )
 
 set_property(TARGET yarp_vicon PROPERTY FOLDER "Plugins/Device")
