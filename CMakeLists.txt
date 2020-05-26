@@ -11,8 +11,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 include(FeatureSummary)
 
-find_package(YARP 3.2.0 REQUIRED
-                        COMPONENTS OS
+find_package(YARP 3.3.2 REQUIRED
+                        COMPONENTS os
                                    sig
                                    dev
                                    math)
@@ -35,15 +35,15 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 yarp_add_plugin(yarp_vicon include/YarpViconBridge.h
                            src/YarpViconBridge.cpp)
 
-target_link_libraries(yarp_vicon PRIVATE YARP::YARP_OS
+target_link_libraries(yarp_vicon PRIVATE YARP::YARP_os
                                          YARP::YARP_sig
                                          YARP::YARP_dev
                                          YARP::YARP_math
                                          ${ViconSDK_LIBRARY})
-list(APPEND YARP_${YARP_PLUGIN_MASTER}_PRIVATE_DEPS YARP_OS
-                                                    YARP_sig
-                                                    YARP_dev
-                                                    YARP_math
+list(APPEND YARP_${YARP_PLUGIN_MASTER}_PRIVATE_DEPS YARP::YARP_os
+                                                    YARP::YARP_sig
+                                                    YARP::YARP_dev
+                                                    YARP::YARP_math
                                                     ${ViconSDK_LIBRARY})
 yarp_install(TARGETS yarp_vicon
              EXPORT YARP_${YARP_PLUGIN_MASTER}
