@@ -27,8 +27,8 @@ Using this device, it is possible to retrieve the Vicon markers information in t
   ```
 - Configure and make
   ```bash
-  $ git clone https://github.com/robotology/yarp-vicon-bridge.git
-  $ cd yarp-vicon-bridge
+  $ git clone https://github.com/robotology/yarp-device-vicon-bridge.git
+  $ cd yarp-device-vicon-bridge
   $ mkdir build && cd build
   $ cd build 
   $ ccmake ..
@@ -49,7 +49,7 @@ Using this device, it is possible to retrieve the Vicon markers information in t
   
 - Clone this repository
   ```bash
-  git clone https://github.com/robotology/yarp-vicon-bridge.git
+  git clone https://github.com/robotology/yarp-device-vicon-bridge.git
   ```
 - Configure and build the project using the [CMake GUI](https://cmake.org/runningcmake/) (:warning: set x64 for generator)
 - Build the project either using Visual Studio or the command line:
@@ -91,7 +91,7 @@ where `tfServer.ini` is:
   enable_ros_publisher 1
   enable_ros_subscriber 0
   ```
-- Open another terminal and start a `yarp-vicon-bridge` device:
+- Open another terminal and start a `yarp-device-vicon-bridge` device:
   ```bash
   $ yarpdev --device vicon --hostname "192.168.10.2"
   ```
