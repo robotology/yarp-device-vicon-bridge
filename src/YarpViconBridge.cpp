@@ -61,7 +61,7 @@ bool YarpViconBridge::open(Searchable &config) {
     {
         silent = true;
     }
-    
+
     if(config.check("inversion"))
     {
         inversion = true;
@@ -125,7 +125,7 @@ bool YarpViconBridge::open(Searchable &config) {
     {
         unlabeled_marker_string = config.find("unlabeled_marker_string").asString();
     }
-    
+
     if(config.check("centroids"))
     {
         bReadCentroids = true;
@@ -138,7 +138,7 @@ bool YarpViconBridge::open(Searchable &config) {
 
     if(config.check("client-buffer-size"))
     {
-        clientBufferSize = static_cast<unsigned int>(config.find("client-buffer-size").asInt());
+        clientBufferSize = static_cast<unsigned int>(config.find("client-buffer-size").asInt32());
     }
 
     if(config.check("set-axis-mapping"))
@@ -434,7 +434,7 @@ void YarpViconBridge::run()
                 {
                   m1 = yarp::math::SE3inv(m1);
                   itf->setTransform(viconroot_string, tf_name, m1);
-                  
+
                 }
                 else
                 {
@@ -538,7 +538,7 @@ void YarpViconBridge::run()
         m1[3][0] = 0; m1[3][1] = 0; m1[3][2] = 0; m1[3][3] = 1;
 
         if (publish_unlabeled_markers)
-        {  
+        {
             std::string tf_name = unlabeled_marker_string + std::to_string(UnlabeledMarkerIndex);
             if(inversion)
             {
@@ -549,7 +549,7 @@ void YarpViconBridge::run()
             {
               itf->setTransform(tf_name, viconroot_string, m1);
             }
-          
+
         }
     }
 }
