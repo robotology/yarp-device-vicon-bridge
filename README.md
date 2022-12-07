@@ -1,4 +1,4 @@
-# `yarp-vicon-bridge`
+# `yarp-device-vicon-bridge`
 
 ## Maintainers
 This repository is maintained by:
